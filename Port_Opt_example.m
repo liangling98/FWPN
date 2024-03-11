@@ -25,6 +25,7 @@
 %% Set Path
 clear;
 addpath(genpath(pwd));
+warning off;
 
 %% Choosing the data
 use_real_data = 0;
@@ -37,8 +38,8 @@ if use_real_data == 1
     fprintf(' We are solving real problem of size n is %5d and p is %5d.\n', n,p);
     fprintf('\n');
 else
-    n = 1e+5;
-    p = 1e+3;
+    n = 1e+3;
+    p = 1e+2;
     W = PortGenData(n, p, 0.1);
     fprintf(' We are solving synthetic problem of size n is %5d and p is %5d.\n', n,p);
     fprintf('\n');
@@ -74,7 +75,7 @@ hist_IVM = IVMSolver(x0, Options, SubSolver, get_obj, get_grad);
 fprintf('************************************************************************\n')
 fprintf('*************** Solving portfolio problem by using PN ******************\n')
 fprintf('************************************************************************\n')
-options.Miter       = 10;
+options.Miter       = 200;
 options.printst     = 1;
 tols.main           = 1e-8;
 options.Lest        = 1;
@@ -107,7 +108,7 @@ hist_nSPG = PortnSPG(W, x0, options);
 %% Solving the problem by using Frank-Wolfe method
 options.cpr         = 0;
 options.linesearch  = 0;
-options.Miter       = 2000;
+options.Miter       = 200;
 options.printst     = 1000;
 tols.main           = 1e-4;
 fprintf('************************************************************************\n')
@@ -118,7 +119,7 @@ hist_FW = PortFWSolver(W, x0, options, tols);
 %% Solving the problem by using Frank-Wolfe method with line search
 options.cpr         = 0;
 options.linesearch  = 1;
-options.Miter       = 2000;
+options.Miter       = 200;
 options.printst     = 1000;
 tols.main           = 1e-4;
 fprintf('************************************************************************\n')
@@ -131,7 +132,7 @@ Options.lambda0    = 1;
 Options.lambda_tol = 1e-6;
 Options.sub_tol    = 0.1;
 Options.short2long = 10;
-Options.max_iter   = 100;
+Options.max_iter   = 200;
 Options.sub_max_iter = size(W,2)/5;
 get_obj   = @(x) -sum(log(W*x));
 SubSolver = @(x, y, tol, max_iter) PortFWPNSubSolver(x, y, W, tol, max_iter);
@@ -139,6 +140,11 @@ fprintf('***********************************************************************
 fprintf('********** Solving portfolio problem by using our method(FWPN) *********\n')
 fprintf('************************************************************************\n')
 hist_FWPN = ProxNSolver(x0, Options, SubSolver, get_obj);
+
+%% Solving the problem by uisng TRFW
+options.Miter = 200;
+tols.main = 1e-3;
+hist_TRFW = PortTRFWSolver(W, x0, options, tols);
 
 %% Plot the result
 % figure;
@@ -285,3 +291,10 @@ end
 h1 = legend(legend_fig1, 'Location', 'southwest');
 xlim([0,inf]);
 set(h1, 'Interpreter', 'latex', 'FontSize', 12);
+close all;
+f_opt = hist_PN.obj;
+semilogy(1:length(hist_TRFW.f), abs(hist_TRFW.f - f_opt) / (1 + abs(f_opt)), ...
+    1:length(hist_FWLS.f), abs(hist_FWLS.f - f_opt) / (1 + abs(f_opt)), ...
+    1:length(hist_FWPN.f), abs(hist_FWPN.f - f_opt) / (1 + abs(f_opt)), ...
+    1:length(hist_PN.f), abs(hist_PN.f - f_opt) / (1 + abs(f_opt)));
+legend("TRFW", "FWLS", "FWPN", "PN");
