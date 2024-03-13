@@ -23,14 +23,14 @@
 % [2] Jaggi, M. Revisiting Frank-Wolfe: Projection-Free Sparse
 %     Convex Optimization. JMLR W&CP, 28(1):427–435, 2013.
 %% Set Path
-clear;
+clear all;
 addpath(genpath(pwd));
 warning off;
 
 %% Choosing the data
-use_real_data = 0;
+use_real_data = 1;
 if use_real_data == 1
-    id = 3;
+    id = 1;
     plist = {'473500_wk.mat','625723_wk.mat','625889_wk.mat'};
     pname = plist{id};
     load(pname);
@@ -143,7 +143,7 @@ hist_FWPN = ProxNSolver(x0, Options, SubSolver, get_obj);
 
 %% Solving the problem by uisng TRFW
 options.Miter = 200;
-tols.main = 1e-3;
+tols.main = 1e-8;
 hist_TRFW = PortTRFWSolver(W, x0, options, tols);
 
 %% Plot the result

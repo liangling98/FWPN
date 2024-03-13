@@ -14,13 +14,13 @@
 %     ellipsoids. Optimisation Methods and Software, 23(1):5–19, 2008.
 
 %% Set Path
-clear;
+clear all;
 addpath(genpath(pwd));
 
 %% Generate Data
 rng(123);
-n = 5e3;
-p = 1e4;
+n = 1e2;
+p = 1e3;
 
 mu    = zeros(n,1);
 sigma = rand(n,n);

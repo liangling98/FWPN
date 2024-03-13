@@ -25,7 +25,7 @@ for iter = 1:options.Miter
     cvx_begin quiet
         cvx_precision high
         variable z(p)
-        minimize (sum(Grad .* (z - x)) + 0.5 * (z-x)' * (Hess*(z-x)))
+        minimize (sum((Grad - Hess*x) .* z) + 0.5 * z' * Hess * z)
         sum(z) == 1.0 
         z >= 0.0
     cvx_end 
