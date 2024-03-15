@@ -1,10 +1,10 @@
-function output = ProxNSolver(x0, Options, SubSolver, get_obj, k)
+function output = ProxNSolver(W, x0, Options, SubSolver, get_obj, k)
 % Proximal-Newton method 
 % Solve : min f(x) + g(x)
 %         where f is self-concordance and g could be a non-smooth function.
 
 % set k
-if nargin == 4
+if nargin == 5
     k = 1;
 end
 
@@ -40,15 +40,20 @@ for iter = 1:max_iter
         x_next = x_cur + 1/(1+lambda_next)*(y_cur - x_cur);
         step_info = 'short step';
     end
+
+    Wx = W*x_next;
+    Grad = -W' * (1./Wx);
+    err = norm(x_next - PortProxSplx(x_next - Grad)) / max([1.0, norm(x_next), norm(Grad)]);
+    output.err(iter) = err;
     
     % Print result
-    fprintf("%10s |  %3d | %3.3e | %3.3e |  %5d  |  %3.3e  | %3.3e | %3.3e\n",...
-        step_info, iter, lambda_next, f_cur, sub.iter, sub.rel_err, sub.gap, count_time);
+    fprintf("%10s |  %3d | %3.3e | %- 9.8e |  %5d  |  %3.3e  | %3.3e | %3.3e | %2.1e\n",...
+        step_info, iter, lambda_next, f_cur, sub.iter, sub.rel_err, sub.gap, count_time, err);
     output.f(iter) = f_cur;
     output.cumul_time(iter) = count_time;
     
     % Check the stop criterion
-    if lambda_next <= lambda_tol %||(iter > 10 && lambda_next > 1.2*lambda_cur)
+    if err <= lambda_tol %||(iter > 10 && lambda_next > 1.2*lambda_cur)
         break;
     end
     

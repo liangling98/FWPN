@@ -2,7 +2,7 @@ function x_nxt  = PortFISTA(Grad, Hopr, x, L, tol)
 y               = x;
 x_cur           = y;
 t               = 1;
-kmax            = 1200;
+kmax            = 10000;
 
 for k           = 1: kmax
     DQ          = Hopr(y-x) + Grad;

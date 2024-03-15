@@ -23,12 +23,22 @@
 % [2] Jaggi, M. Revisiting Frank-Wolfe: Projection-Free Sparse
 %     Convex Optimization. JMLR W&CP, 28(1):427–435, 2013.
 %% Set Path
+clc;
 clear all;
 addpath(genpath(pwd));
 warning off;
 
+run_IVM = 0;
+run_PN = 1;
+run_BB = 0;
+run_SPG = 0;
+run_FW = 0;
+run_FWLS = 0;
+run_FWPN = 1;
+run_FWQPPAL = 1;
+
 %% Choosing the data
-use_real_data = 1;
+use_real_data = 0;
 if use_real_data == 1
     id = 1;
     plist = {'473500_wk.mat','625723_wk.mat','625889_wk.mat'};
@@ -38,8 +48,8 @@ if use_real_data == 1
     fprintf(' We are solving real problem of size n is %5d and p is %5d.\n', n,p);
     fprintf('\n');
 else
-    n = 1e+3;
-    p = 1e+2;
+    n = 1e+4;
+    p = 1e+3;
     W = PortGenData(n, p, 0.1);
     fprintf(' We are solving synthetic problem of size n is %5d and p is %5d.\n', n,p);
     fprintf('\n');
@@ -57,94 +67,110 @@ end
 x0    = ones(p,1)/p;
     
 %% Solving the problem by using inexact variable metric (IVM) method
-fprintf('************************************************************************\n')
-fprintf('********** Solving portfolio problem by using IVM method *********\n')
-fprintf('************************************************************************\n')
-Options.M    = 10;
-Options.tau = 0.1;
-Options.theta    = 0.01;
-Options.maxiters   = 100;
-Options.sub_max_iter = size(W,2)/10;
-Options.lambda_tol = 1e-3;
-get_obj  = @(x) -sum(log(W*x));
-get_grad = @(x) - ( (1./(W*x))' * W)';
-SubSolver = @(x, y, theta, max_iter) PortIVMSubSolver(x, y, W, theta, max_iter);
-hist_IVM = IVMSolver(x0, Options, SubSolver, get_obj, get_grad);
+if run_IVM == 1
+    fprintf('************************************************************************\n')
+    fprintf('********** Solving portfolio problem by using IVM method *********\n')
+    fprintf('************************************************************************\n')
+    Options.M    = 10;
+    Options.tau = 0.1;
+    Options.theta    = 0.01;
+    Options.maxiters   = 100;
+    Options.sub_max_iter = size(W,2)/10;
+    Options.lambda_tol = 1e-3;
+    get_obj  = @(x) -sum(log(W*x));
+    get_grad = @(x) - ( (1./(W*x))' * W)';
+    SubSolver = @(x, y, theta, max_iter) PortIVMSubSolver(x, y, W, theta, max_iter);
+    hist_IVM = IVMSolver(x0, Options, SubSolver, get_obj, get_grad);
+end
 
 %% Solving the problem by using standard Proximal Newton method
-fprintf('************************************************************************\n')
-fprintf('*************** Solving portfolio problem by using PN ******************\n')
-fprintf('************************************************************************\n')
-options.Miter       = 200;
-options.printst     = 1;
-tols.main           = 1e-8;
-options.Lest        = 1;
-hist_PN = PortPNSolver(W, x0, options, tols);
+if run_PN == 1
+    fprintf('************************************************************************\n')
+    fprintf('*************** Solving portfolio problem by using PN ******************\n')
+    fprintf('************************************************************************\n')
+    options.Miter       = 200;
+    options.printst     = 1;
+    tols.main           = 1e-6;
+    options.Lest        = 1;
+    hist_PN = PortPNSolver(W, x0, options, tols);
+end
 
 %% Solving the problem by using proximal-gradient method with B-B stepsize
-options.cpr         = 0;
-options.Miter       = 1000;
-options.printst     = 100;
-tols.main           = 1e-6;
-fprintf('************************************************************************\n')
-fprintf('************** Solving portfolio problem by using PG-BB ****************\n')
-fprintf('************************************************************************\n')
-hist_PGBB = PortPGBBSolver(W, x0, options, tols);
+if run_BB == 1
+    options.cpr         = 0;
+    options.Miter       = 1000;
+    options.printst     = 100;
+    tols.main           = 1e-6;
+    fprintf('************************************************************************\n')
+    fprintf('************** Solving portfolio problem by using PG-BB ****************\n')
+    fprintf('************************************************************************\n')
+    hist_PGBB = PortPGBBSolver(W, x0, options, tols);
+end
 
 %% Solving the problem by using nonmonotone spectral proximal gradient method
-options.gamma    = 1e-6;
-options.alpha = 1e-1;
-options.Alpha = [1e-7, 1];
-options.M         = 5;
-options.sigma     = 0.5;
-options.maxiters       = 1000;
-options.printdist   = 10;
-options.tol         = 1e-4;
-fprintf('************************************************************************\n')
-fprintf('************** Solving portfolio problem by using nSPG ****************\n')
-fprintf('************************************************************************\n')
-hist_nSPG = PortnSPG(W, x0, options);
+if run_SPG == 1
+    options.gamma    = 1e-6;
+    options.alpha = 1e-1;
+    options.Alpha = [1e-7, 1];
+    options.M         = 5;
+    options.sigma     = 0.5;
+    options.maxiters       = 200;
+    options.printdist   = 10;
+    options.tol         = 1e-4;
+    fprintf('************************************************************************\n')
+    fprintf('************** Solving portfolio problem by using nSPG ****************\n')
+    fprintf('************************************************************************\n')
+    hist_nSPG = PortnSPG(W, x0, options);
+end
 
 %% Solving the problem by using Frank-Wolfe method
-options.cpr         = 0;
-options.linesearch  = 0;
-options.Miter       = 200;
-options.printst     = 1000;
-tols.main           = 1e-4;
-fprintf('************************************************************************\n')
-fprintf('*************** Solving portfolio problem by using FW ******************\n')
-fprintf('************************************************************************\n')
-hist_FW = PortFWSolver(W, x0, options, tols);
+if run_FW == 1
+    options.cpr         = 0;
+    options.linesearch  = 0;
+    options.Miter       = 200;
+    options.printst     = 1000;
+    tols.main           = 1e-4;
+    fprintf('************************************************************************\n')
+    fprintf('*************** Solving portfolio problem by using FW ******************\n')
+    fprintf('************************************************************************\n')
+    hist_FW = PortFWSolver(W, x0, options, tols);
+end
 
 %% Solving the problem by using Frank-Wolfe method with line search
-options.cpr         = 0;
-options.linesearch  = 1;
-options.Miter       = 200;
-options.printst     = 1000;
-tols.main           = 1e-4;
-fprintf('************************************************************************\n')
-fprintf('************** Solving portfolio problem by using FW-LS ****************\n')
-fprintf('************************************************************************\n')
-hist_FWLS = PortFWSolver(W, x0, options, tols);
+if run_FWLS == 1
+    options.cpr         = 0;
+    options.linesearch  = 1;
+    options.Miter       = 200;
+    options.printst     = 1000;
+    tols.main           = 1e-4;
+    fprintf('************************************************************************\n')
+    fprintf('************** Solving portfolio problem by using FW-LS ****************\n')
+    fprintf('************************************************************************\n')
+    hist_FWLS = PortFWSolver(W, x0, options, tols);
+end
 
 %% Solving the problem by using our method
-Options.lambda0    = 1;
-Options.lambda_tol = 1e-6;
-Options.sub_tol    = 0.1;
-Options.short2long = 10;
-Options.max_iter   = 200;
-Options.sub_max_iter = size(W,2)/5;
-get_obj   = @(x) -sum(log(W*x));
-SubSolver = @(x, y, tol, max_iter) PortFWPNSubSolver(x, y, W, tol, max_iter);
-fprintf('************************************************************************\n')
-fprintf('********** Solving portfolio problem by using our method(FWPN) *********\n')
-fprintf('************************************************************************\n')
-hist_FWPN = ProxNSolver(x0, Options, SubSolver, get_obj);
+if run_FWPN == 1
+    Options.lambda0    = 1;
+    Options.lambda_tol = 1e-6;
+    Options.sub_tol    = 0.1;
+    Options.short2long = 10;
+    Options.max_iter   = 200;
+    Options.sub_max_iter = size(W,2)/5;
+    get_obj   = @(x) -sum(log(W*x));
+    SubSolver = @(x, y, tol, max_iter) PortFWPNSubSolver(x, y, W, tol, max_iter);
+    fprintf('************************************************************************\n')
+    fprintf('********** Solving portfolio problem by using our method(FWPN) *********\n')
+    fprintf('************************************************************************\n')
+    hist_FWPN = ProxNSolver(x0, Options, SubSolver, get_obj);
+end
 
-%% Solving the problem by uisng TRFW
-options.Miter = 200;
-tols.main = 1e-8;
-hist_TRFW = PortTRFWSolver(W, x0, options, tols);
+%% Solving the problem by uisng FWQPPAL
+if run_FWQPPAL == 1
+    options.Miter = 100;
+    tols.main = 1e-6;
+    hist_FWQPPAL = PortFWQPPALSolver(W, x0, options, tols);
+end
 
 %% Plot the result
 % figure;
@@ -215,86 +241,89 @@ hist_TRFW = PortTRFWSolver(W, x0, options, tols);
 % set(h1, 'Interpreter', 'latex', 'FontSize', 12);
 
 %% Plot the result
-figure;
+plot_yes = 0;
+if plot_yes == 1
+    figure;
 
-f_star = min([hist_FWPN.obj, hist_FW.f(end), hist_PN.f(end), hist_FWLS.f(end), hist_PGBB.f(end), hist_IVM.f(end)]);
-f0 = -sum(log(W*x0));
-EPS = 0.5;
-legend_fig1 = {};
-MarkSize = 7;
+    f_star = min([hist_FWPN.obj, hist_FW.f(end), hist_PN.f(end), hist_FWLS.f(end), hist_PGBB.f(end), hist_IVM.f(end)]);
+    f0 = -sum(log(W*x0));
+    EPS = 0.5;
+    legend_fig1 = {};
+    MarkSize = 7;
 
-loglog([EPS, hist_FWPN.cumul_time], abs([hist_FWPN.f, hist_FWPN.obj] - f_star),...
-    'o--', 'Color', [0.8500 0.3250 0.0980],...
-    'MarkerEdgeColor',[0.8500 0.3250 0.0980], 'MarkerFaceColor',[0.8500 0.3250 0.0980], 'MarkerSize', MarkSize);  hold on
-legend_fig1{1,1} = 'FWPN';
+    loglog([EPS, hist_FWPN.cumul_time], abs([hist_FWPN.f, hist_FWPN.obj] - f_star),...
+        'o--', 'Color', [0.8500 0.3250 0.0980],...
+        'MarkerEdgeColor',[0.8500 0.3250 0.0980], 'MarkerFaceColor',[0.8500 0.3250 0.0980], 'MarkerSize', MarkSize);  hold on
+    legend_fig1{1,1} = 'FWPN';
 
-totallength = length(hist_PN.f);
-dist = floor(totallength/10);
-index = 1:dist:totallength;
-index = floor(totallength.^((1:10)/10));
-loglog([EPS, hist_PN.cumul_time(index)], abs([f0, hist_PN.f(index)] - f_star),...
-    '^-', 'Color', [0.9290 0.6940 0.1250],...
-    'MarkerEdgeColor',[0.9290 0.6940 0.1250], 'MarkerFaceColor', [0.9290 0.6940 0.1250], 'MarkerSize', MarkSize);  hold on
-legend_fig1{1,2} = 'PN';
-    
-totallength = length(hist_FW.f);
-dist = floor(totallength/10);
-index = 1:dist:totallength;
-index = floor(totallength.^((1:10)/10));
-semilogy([EPS, hist_FW.cumul_time(index)], abs([f0, hist_FW.f(index)] - f_star),...
-    'd-','color', [0.4660 0.6740 0.1880],...
-    'MarkerEdgeColor',[0.4660 0.6740 0.1880], 'MarkerFaceColor', [0.4660 0.6740 0.1880], 'MarkerSize', MarkSize);  hold on
-legend_fig1{1,3} = 'FW';
+    totallength = length(hist_PN.f);
+    dist = floor(totallength/10);
+    index = 1:dist:totallength;
+    index = floor(totallength.^((1:10)/10));
+    loglog([EPS, hist_PN.cumul_time(index)], abs([f0, hist_PN.f(index)] - f_star),...
+        '^-', 'Color', [0.9290 0.6940 0.1250],...
+        'MarkerEdgeColor',[0.9290 0.6940 0.1250], 'MarkerFaceColor', [0.9290 0.6940 0.1250], 'MarkerSize', MarkSize);  hold on
+    legend_fig1{1,2} = 'PN';
 
-totallength = length(hist_FWLS.f);
-dist = floor(totallength/10);
-index = 1:dist:totallength;
-index = floor(totallength.^((1:10)/10));
-loglog([EPS, hist_FWLS.cumul_time(index)], abs([f0, hist_FWLS.f(index)] - f_star),...
-    'v-','color', [0 0.4470 0.7410],...
-    'MarkerEdgeColor',[0 0.4470 0.7410], 'MarkerFaceColor', [0 0.4470 0.7410], 'MarkerSize', MarkSize);  hold on
-legend_fig1{1,4} = 'FWLS';
+    totallength = length(hist_FW.f);
+    dist = floor(totallength/10);
+    index = 1:dist:totallength;
+    index = floor(totallength.^((1:10)/10));
+    semilogy([EPS, hist_FW.cumul_time(index)], abs([f0, hist_FW.f(index)] - f_star),...
+        'd-','color', [0.4660 0.6740 0.1880],...
+        'MarkerEdgeColor',[0.4660 0.6740 0.1880], 'MarkerFaceColor', [0.4660 0.6740 0.1880], 'MarkerSize', MarkSize);  hold on
+    legend_fig1{1,3} = 'FW';
 
-totallength = length(hist_PGBB.f);
-dist = floor(totallength/10);
-index = 1:dist:totallength;
-index = floor(totallength.^((1:10)/10));
-loglog([EPS, hist_PGBB.cumul_time(index)], abs([f0, hist_PGBB.f(index)] - f_star),...
-    's-', 'Color',[0.3010 0.7450 0.9330],...
-    'MarkerEdgeColor', [0.3010 0.7450 0.9330], 'MarkerFaceColor',[0.3010 0.7450 0.9330], 'MarkerSize', MarkSize);  hold on
-legend_fig1{1,5} = 'PGBB';
+    totallength = length(hist_FWLS.f);
+    dist = floor(totallength/10);
+    index = 1:dist:totallength;
+    index = floor(totallength.^((1:10)/10));
+    loglog([EPS, hist_FWLS.cumul_time(index)], abs([f0, hist_FWLS.f(index)] - f_star),...
+        'v-','color', [0 0.4470 0.7410],...
+        'MarkerEdgeColor',[0 0.4470 0.7410], 'MarkerFaceColor', [0 0.4470 0.7410], 'MarkerSize', MarkSize);  hold on
+    legend_fig1{1,4} = 'FWLS';
 
-totallength = length(hist_nSPG.f);
-dist = floor(totallength/10);
-index = 1:dist:totallength;
-index = floor(totallength.^((1:10)/10));
-loglog([EPS, hist_nSPG.cumul_time(index)], abs([f0, hist_nSPG.f(index)] - f_star),...
-    'p-', 'Color',[0 0 1],...
-    'MarkerEdgeColor', [0 0 1], 'MarkerFaceColor',[0 0 1], 'MarkerSize', MarkSize);  hold on
-legend_fig1{1,6} = 'nSPG';
+    totallength = length(hist_PGBB.f);
+    dist = floor(totallength/10);
+    index = 1:dist:totallength;
+    index = floor(totallength.^((1:10)/10));
+    loglog([EPS, hist_PGBB.cumul_time(index)], abs([f0, hist_PGBB.f(index)] - f_star),...
+        's-', 'Color',[0.3010 0.7450 0.9330],...
+        'MarkerEdgeColor', [0.3010 0.7450 0.9330], 'MarkerFaceColor',[0.3010 0.7450 0.9330], 'MarkerSize', MarkSize);  hold on
+    legend_fig1{1,5} = 'PGBB';
 
-loglog([EPS, hist_IVM.cumul_time], abs([f0, hist_IVM.f] - f_star),...
-    '*--', 'Color', [1 0 0],...
-    'MarkerEdgeColor',[1 0 0], 'MarkerFaceColor',[1 0 0], 'MarkerSize', MarkSize);  hold on
-legend_fig1{1,7} = 'IVM';
+    totallength = length(hist_nSPG.f);
+    dist = floor(totallength/10);
+    index = 1:dist:totallength;
+    index = floor(totallength.^((1:10)/10));
+    loglog([EPS, hist_nSPG.cumul_time(index)], abs([f0, hist_nSPG.f(index)] - f_star),...
+        'p-', 'Color',[0 0 1],...
+        'MarkerEdgeColor', [0 0 1], 'MarkerFaceColor',[0 0 1], 'MarkerSize', MarkSize);  hold on
+    legend_fig1{1,6} = 'nSPG';
+
+    loglog([EPS, hist_IVM.cumul_time], abs([f0, hist_IVM.f] - f_star),...
+        '*--', 'Color', [1 0 0],...
+        'MarkerEdgeColor',[1 0 0], 'MarkerFaceColor',[1 0 0], 'MarkerSize', MarkSize);  hold on
+    legend_fig1{1,7} = 'IVM';
 
 
-xlabel('Time($s$)', 'Interpreter', 'latex', 'FontSize', 20);
+    xlabel('Time($s$)', 'Interpreter', 'latex', 'FontSize', 20);
 
-ylabel('$f(X) - f^\star$','Interpreter', 'latex', 'FontSize', 20);
+    ylabel('$f(X) - f^\star$','Interpreter', 'latex', 'FontSize', 20);
 
-if use_real_data == 1
-    title('real: $n = $' + string(n) + ', $p = $' + string(p),'Interpreter', 'latex', 'FontSize', 20)
-else
+    if use_real_data == 1
+        title('real: $n = $' + string(n) + ', $p = $' + string(p),'Interpreter', 'latex', 'FontSize', 20)
+    else
         title('syn: $n = $' + string(n) + ', $p = $' + string(p),'Interpreter', 'latex', 'FontSize', 20)
+    end
+    h1 = legend(legend_fig1, 'Location', 'southwest');
+    xlim([0,inf]);
+    set(h1, 'Interpreter', 'latex', 'FontSize', 12);
 end
-h1 = legend(legend_fig1, 'Location', 'southwest');
-xlim([0,inf]);
-set(h1, 'Interpreter', 'latex', 'FontSize', 12);
-close all;
+
+
 f_opt = hist_PN.obj;
-semilogy(1:length(hist_TRFW.f), abs(hist_TRFW.f - f_opt) / (1 + abs(f_opt)), ...
-    1:length(hist_FWLS.f), abs(hist_FWLS.f - f_opt) / (1 + abs(f_opt)), ...
+semilogy(1:length(hist_FWQPPAL.f), abs(hist_FWQPPAL.f - f_opt) / (1 + abs(f_opt)), ...
     1:length(hist_FWPN.f), abs(hist_FWPN.f - f_opt) / (1 + abs(f_opt)), ...
     1:length(hist_PN.f), abs(hist_PN.f - f_opt) / (1 + abs(f_opt)));
-legend("TRFW", "FWLS", "FWPN", "PN");
+legend("FWQPPAL", "FWPN", "PN");

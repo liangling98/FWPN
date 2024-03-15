@@ -29,14 +29,14 @@ if options.Lest     == 1                    % Estimate Lipschitz Constant
     L               = dHd / ( dir' * dir );
 end
 
+% Compute the denominator.
+denom               = W * x;                % n by 1 vector
+
+% Evaluate the gradient.
+ratG                = 1 ./ denom;           % n by 1 vector
+Grad                = -W' * ratG;           % p by 1 vector
+
 for iter                = 1:options.Miter    
-    
-    % Compute the denominator.
-    denom               = W * x;                % n by 1 vector
-    
-    % Evaluate the gradient.
-    ratG                = 1 ./ denom;           % n by 1 vector
-    Grad                = -W' * ratG;           % p by 1 vector
     
     % Evaluate the Hessian
     ratH                = 1 ./ (denom.^2);      % n by 1 vector
@@ -67,10 +67,18 @@ for iter                = 1:options.Miter
     end
     if (1-s <= tols.steps), s = 1; s_deactive = 1; end                    
     x                   = x + s * diffx;
+
+    % Compute the denominator.
+    denom               = W * x;                % n by 1 vector
+    
+    % Evaluate the gradient.
+    ratG                = 1 ./ denom;           % n by 1 vector
+    Grad                = -W' * ratG;           % p by 1 vector
     
     % solution value stop-criterion    
-    nrm_dx              = norm(diffx);
-    rdiff               = nrm_dx / max(1.0, norm(x)); 
+    %nrm_dx              = norm(diffx);
+    %rdiff               = nrm_dx / max(1.0, norm(x)); 
+    rdiff = norm(x - PortProxSplx(x - Grad)) / max([1.0, norm(x), norm(Grad)]);
     hist.err(iter, 1)   = rdiff;
     hist.f(iter)        = -sum(log(W*x));
     hist.cumul_time(iter) = toc(time1);
@@ -78,13 +86,13 @@ for iter                = 1:options.Miter
     % Check the stopping criterion.
     if (rdiff           <= tols.main) && iter > 1
         hist.msg        = 'Convergence achieved!';
-        fprintf(' %4d  | %3.3e | %3.3e | %3.3e | %3.3e \n',...
+        fprintf(' %4d  | %- 9.9e | %3.3e | %3.3e | %3.3e \n',...
             iter, hist.f(iter), s, rdiff, hist.cumul_time(iter));
         break;
     end
     
     if mod(iter, options.printst) == 0 || iter == 1
-        fprintf(' %4d  | %3.3e | %3.3e | %3.3e | %3.3e \n',...
+        fprintf(' %4d  | %- 9.8e | %3.3e | %3.3e | %3.3e \n',...
             iter, hist.f(iter), s, rdiff, hist.cumul_time(iter));
     end
   
