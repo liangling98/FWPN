@@ -1,4 +1,4 @@
-function hist = PortFWQPSolver(W, x, options, tols)
+function hist = PortPNQPSolver(W, x, options, tols)
 n = size(W,1);
 p = size(W,2);
 hist.nsize = [n,p];

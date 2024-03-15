@@ -5,8 +5,8 @@ warning off;
 
 run_PN = 1;
 run_FWPN = 1;
-run_FWQPPAL = 1;
-run_FWQP = 1;
+run_PNQPPAL = 1;
+run_PNQP = 1;
 
 %% Choosing the data
 use_real_data = 0;
@@ -62,34 +62,34 @@ if run_FWPN == 1
     fprintf('************************************************************************\n')
     fprintf('********** Solving portfolio problem by using FWPN *********************\n')
     fprintf('************************************************************************\n')
-    hist_FWPN = ProxNSolver(W, x0, Options, SubSolver, get_obj);
+    grad_map = @(x) -W' * (1./(W*x));
+    hist_FWPN = ProxNSolver(grad_map, x0, Options, SubSolver, get_obj);
 end
 
 %% Solving the problem by uisng FWQPPAL
-if run_FWQPPAL == 1
+if run_PNQPPAL == 1
     fprintf('************************************************************************\n')
-    fprintf('********** Solving portfolio problem by using FWQPPAL ******************\n')
+    fprintf('********** Solving portfolio problem by using PNQPPAL ******************\n')
     fprintf('************************************************************************\n')
     options.Miter = 20;
     tols.main = 1e-8;
-    hist_FWQPPAL = PortFWQPPALSolver(W, x0, options, tols);
+    hist_PNQPPAL = PortPNQPPALSolver(W, x0, options, tols);
 end
 
 %% Solving the problem by uisng FWQPPAL
-if run_FWQP == 1
+if run_PNQP == 1
     fprintf('************************************************************************\n')
-    fprintf('********** Solving portfolio problem by using FWQP *********************\n')
+    fprintf('********** Solving portfolio problem by using PNQP *********************\n')
     fprintf('************************************************************************\n')
     options.Miter = 20;
     tols.main = 1e-8;
-    hist_FWQP = PortFWQPSolver(W, x0, options, tols);
+    hist_PNQP = PortPNQPSolver(W, x0, options, tols);
 end
 
 %% Plot 
-semilogy(1:length(hist_FWQPPAL.err), hist_FWQPPAL.err, ...
+semilogy(1:length(hist_PNQPPAL.err), hist_PNQPPAL.err, ...
     1:length(hist_FWPN.err), hist_FWPN.err, ...
-    1:length(hist_PN.err), hist_PN.err, ...
-    1:length(hist_FWQP.err), hist_FWQP.err);
-legend("FWQPPAL", "FWPN", "PN", "FWQP");
+    1:length(hist_PN.err), hist_PN.err);
+legend("FWQPPAL", "FWPN", "PN");
 
 

@@ -1,4 +1,4 @@
-function output = ProxNSolver(W, x0, Options, SubSolver, get_obj, k)
+function output = ProxNSolver(grad_map, x0, Options, SubSolver, get_obj, k)
 % Proximal-Newton method 
 % Solve : min f(x) + g(x)
 %         where f is self-concordance and g could be a non-smooth function.
@@ -41,8 +41,7 @@ for iter = 1:max_iter
         step_info = 'short step';
     end
 
-    Wx = W*x_next;
-    Grad = -W' * (1./Wx);
+    Grad = grad_map(x_next);
     err = norm(x_next - PortProxSplx(x_next - Grad)) / max([1.0, norm(x_next), norm(Grad)]);
     output.err(iter) = err;
     

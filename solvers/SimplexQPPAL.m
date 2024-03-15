@@ -139,7 +139,7 @@ for iter = 1:max_iter
         uu(x_input > l & x_input < u) = 1;       
         
         rhs = -[w-x; grad_Ly];
-        if strcmp(lin_solver, 'bicgstab') || ~ismatrix(Q)
+        if strcmp(lin_solver, 'bicgstab') || isa(Q, "function_handle")
             V = @(x) Vmap(x, uu, Qmap, sigma);
             [d_wy, lin_solved, res_lin, iter_lin] = bicgstab(V, rhs, stop_tol_lin, max_iter_lin);
             iter_lin = floor(iter_lin);
